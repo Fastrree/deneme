@@ -1,0 +1,2705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CHRONOS ELITE - Luxury Mechanical Watch Experience</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #000;
+            overflow-x: hidden;
+            color: #fff;
+        }
+
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            z-index: 1;
+        }
+
+        .scroll-section {
+            position: relative;
+            z-index: 2;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+        }
+
+        .hero-section {
+            text-align: center;
+        }
+
+        .hero-title {
+            font-size: clamp(2rem, 5vw, 4rem);
+            font-weight: 300;
+            letter-spacing: 0.5em;
+            text-transform: uppercase;
+            opacity: 0;
+            transform: translateY(50px);
+            background: linear-gradient(135deg, #c9a962 0%, #f0e6d2 50%, #c9a962 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero-subtitle {
+            font-size: clamp(0.8rem, 2vw, 1.2rem);
+            font-weight: 300;
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+            margin-top: 1rem;
+            opacity: 0;
+            transform: translateY(30px);
+            color: #888;
+        }
+
+        .chapter-indicator {
+            position: fixed;
+            right: 40px;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .chapter-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.3);
+            transition: all 0.5s ease;
+        }
+
+        .chapter-dot.active {
+            background: #c9a962;
+            transform: scale(1.3);
+        }
+
+        .loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            background: #000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            transition: opacity 1s ease;
+        }
+
+        .loading-logo {
+            font-size: 3rem;
+            font-weight: 300;
+            letter-spacing: 0.5em;
+            color: #c9a962;
+            margin-bottom: 2rem;
+        }
+
+        .loading-bar {
+            width: 300px;
+            height: 2px;
+            background: rgba(255,255,255,0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .loading-progress {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #c9a962, #f0e6d2);
+            transition: width 0.3s ease;
+        }
+
+        .info-panel {
+            position: fixed;
+            bottom: 40px;
+            left: 40px;
+            z-index: 10;
+            max-width: 300px;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        .info-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: #c9a962;
+            margin-bottom: 0.5rem;
+        }
+
+        .info-text {
+            font-size: 0.75rem;
+            line-height: 1.6;
+            color: #888;
+            font-weight: 300;
+        }
+
+        @media (max-width: 768px) {
+            .chapter-indicator {
+                right: 20px;
+            }
+            .info-panel {
+                left: 20px;
+                bottom: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="loading-screen" id="loading">
+        <div class="loading-logo">CHRONOS</div>
+        <div class="loading-bar">
+            <div class="loading-progress" id="progress"></div>
+        </div>
+    </div>
+
+    <div id="canvas-container"></div>
+
+    <div class="chapter-indicator">
+        <div class="chapter-dot active" data-chapter="1"></div>
+        <div class="chapter-dot" data-chapter="2"></div>
+        <div class="chapter-dot" data-chapter="3"></div>
+        <div class="chapter-dot" data-chapter="4"></div>
+        <div class="chapter-dot" data-chapter="5"></div>
+    </div>
+
+    <div class="scroll-section" id="section1">
+        <div class="hero-section">
+            <h1 class="hero-title">Chronos Elite</h1>
+            <p class="hero-subtitle">Swiss Precision Engineering</p>
+        </div>
+    </div>
+
+    <div class="scroll-section" id="section2"></div>
+    <div class="scroll-section" id="section3"></div>
+    <div class="scroll-section" id="section4"></div>
+    <div class="scroll-section" id="section5"></div>
+
+    <div class="info-panel" id="infoPanel">
+        <div class="info-title" id="infoTitle">Movement</div>
+        <div class="info-text" id="infoText">Automatic caliber with 72-hour power reserve</div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+
+    <script>
+        // ============================================
+        // GLOBAL CONFIGURATION
+        // ============================================
+        const CONFIG = {
+            watchScale: 1.0,
+            caseDiameter: 2.0,
+            caseThickness: 0.45,
+            bezelWidth: 0.15,
+            crystalHeight: 0.08,
+            dialLayers: 8,
+            gearCount: 12,
+            braceletLinks: 25,
+            animationSpeed: 1.0
+        };
+
+        // ============================================
+        // MATERIAL LIBRARY
+        // ============================================
+        class MaterialLibrary {
+            constructor() {
+                this.materials = {};
+                this.createAllMaterials();
+            }
+
+            createAllMaterials() {
+                // Brushed Titanium
+                this.materials.brushedTitanium = new THREE.MeshStandardMaterial({
+                    color: 0x8a8a8a,
+                    metalness: 0.95,
+                    roughness: 0.35,
+                    envMapIntensity: 1.5
+                });
+
+                // Polished Steel
+                this.materials.polishedSteel = new THREE.MeshStandardMaterial({
+                    color: 0xd4d4d4,
+                    metalness: 1.0,
+                    roughness: 0.08,
+                    envMapIntensity: 2.0
+                });
+
+                // Champagne Gold
+                this.materials.champagneGold = new THREE.MeshStandardMaterial({
+                    color: 0xc9a962,
+                    metalness: 1.0,
+                    roughness: 0.15,
+                    envMapIntensity: 1.8
+                });
+
+                // Rose Gold
+                this.materials.roseGold = new THREE.MeshStandardMaterial({
+                    color: 0xe0b896,
+                    metalness: 1.0,
+                    roughness: 0.12,
+                    envMapIntensity: 1.8
+                });
+
+                // Black Titanium
+                this.materials.blackTitanium = new THREE.MeshStandardMaterial({
+                    color: 0x1a1a1a,
+                    metalness: 0.9,
+                    roughness: 0.25,
+                    envMapIntensity: 1.3
+                });
+
+                // Black Ceramic
+                this.materials.blackCeramic = new THREE.MeshStandardMaterial({
+                    color: 0x0a0a0a,
+                    metalness: 0.6,
+                    roughness: 0.4,
+                    envMapIntensity: 1.0
+                });
+
+                // Sapphire Crystal
+                this.materials.sapphire = new THREE.MeshPhysicalMaterial({
+                    color: 0xffffff,
+                    metalness: 0.0,
+                    roughness: 0.02,
+                    transmission: 1.0,
+                    thickness: 0.5,
+                    ior: 1.52,
+                    clearcoat: 1.0,
+                    clearcoatRoughness: 0.03,
+                    transparent: true,
+                    opacity: 0.95
+                });
+
+                // Polished Gold Accents
+                this.materials.polishedGold = new THREE.MeshStandardMaterial({
+                    color: 0xffd700,
+                    metalness: 1.0,
+                    roughness: 0.05,
+                    envMapIntensity: 2.5
+                });
+
+                // Gunmetal
+                this.materials.gunmetal = new THREE.MeshStandardMaterial({
+                    color: 0x2a2a3a,
+                    metalness: 0.95,
+                    roughness: 0.3,
+                    envMapIntensity: 1.4
+                });
+
+                // Ruby Jewel
+                this.materials.ruby = new THREE.MeshPhysicalMaterial({
+                    color: 0xaa0033,
+                    metalness: 0.0,
+                    roughness: 0.05,
+                    transmission: 0.8,
+                    thickness: 0.3,
+                    ior: 1.76,
+                    clearcoat: 1.0
+                });
+            }
+
+            get(name) {
+                return this.materials[name];
+            }
+        }
+
+        // ============================================
+        // PROCEDURAL TEXTURE GENERATOR
+        // ============================================
+        class ProceduralTextureGenerator {
+            static createSunburstTexture(size = 512) {
+                const canvas = document.createElement('canvas');
+                canvas.width = size;
+                canvas.height = size;
+                const ctx = canvas.getContext('2d');
+                const centerX = size / 2;
+                const centerY = size / 2;
+                const radius = size / 2;
+
+                // Base gradient
+                const gradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, radius);
+                gradient.addColorStop(0, '#1a1a1a');
+                gradient.addColorStop(0.5, '#2a2a2a');
+                gradient.addColorStop(1, '#0a0a0a');
+                ctx.fillStyle = gradient;
+                ctx.fillRect(0, 0, size, size);
+
+                // Sunburst rays
+                const rayCount = 180;
+                for (let i = 0; i < rayCount; i++) {
+                    const angle = (i / rayCount) * Math.PI * 2;
+                    const rayLength = radius * (0.8 + Math.random() * 0.2);
+                    
+                    ctx.save();
+                    ctx.translate(centerX, centerY);
+                    ctx.rotate(angle);
+                    
+                    const rayGradient = ctx.createLinearGradient(0, 0, rayLength, 0);
+                    rayGradient.addColorStop(0, 'rgba(200, 180, 140, 0)');
+                    rayGradient.addColorStop(0.3, 'rgba(200, 180, 140, 0.08)');
+                    rayGradient.addColorStop(0.7, 'rgba(200, 180, 140, 0.05)');
+                    rayGradient.addColorStop(1, 'rgba(200, 180, 140, 0)');
+                    
+                    ctx.fillStyle = rayGradient;
+                    ctx.beginPath();
+                    ctx.moveTo(0, -0.5);
+                    ctx.lineTo(rayLength, -1);
+                    ctx.lineTo(rayLength, 1);
+                    ctx.lineTo(0, 0.5);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.restore();
+                }
+
+                // Micro noise
+                const imageData = ctx.getImageData(0, 0, size, size);
+                const data = imageData.data;
+                for (let i = 0; i < data.length; i += 4) {
+                    const noise = (Math.random() - 0.5) * 8;
+                    data[i] = Math.max(0, Math.min(255, data[i] + noise));
+                    data[i + 1] = Math.max(0, Math.min(255, data[i + 1] + noise));
+                    data[i + 2] = Math.max(0, Math.min(255, data[i + 2] + noise));
+                }
+                ctx.putImageData(imageData, 0, 0);
+
+                return new THREE.CanvasTexture(canvas);
+            }
+
+            static createBrushedMetalTexture(size = 512) {
+                const canvas = document.createElement('canvas');
+                canvas.width = size;
+                canvas.height = size;
+                const ctx = canvas.getContext('2d');
+
+                ctx.fillStyle = '#8a8a8a';
+                ctx.fillRect(0, 0, size, size);
+
+                // Brushed lines
+                for (let y = 0; y < size; y += 2) {
+                    const alpha = 0.05 + Math.random() * 0.08;
+                    ctx.strokeStyle = `rgba(255, 255, 255, ${alpha})`;
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.moveTo(0, y);
+                    ctx.lineTo(size, y);
+                    ctx.stroke();
+                }
+
+                // Radial variation
+                const radialGrad = ctx.createRadialGradient(size/2, size/2, 0, size/2, size/2, size/2);
+                radialGrad.addColorStop(0, 'rgba(0,0,0,0)');
+                radialGrad.addColorStop(0.7, 'rgba(0,0,0,0.1)');
+                radialGrad.addColorStop(1, 'rgba(0,0,0,0.2)');
+                ctx.fillStyle = radialGrad;
+                ctx.fillRect(0, 0, size, size);
+
+                return new THREE.CanvasTexture(canvas);
+            }
+
+            static createChapterRingTexture(size = 512) {
+                const canvas = document.createElement('canvas');
+                canvas.width = size;
+                canvas.height = size;
+                const ctx = canvas.getContext('2d');
+                const centerX = size / 2;
+                const centerY = size / 2;
+
+                ctx.clearRect(0, 0, size, size);
+
+                // Draw chapter ring markings
+                for (let i = 0; i < 60; i++) {
+                    const angle = (i / 60) * Math.PI * 2 - Math.PI / 2;
+                    const isHour = i % 5 === 0;
+                    const innerRadius = isHour ? size * 0.35 : size * 0.38;
+                    const outerRadius = size * 0.42;
+                    const width = isHour ? 3 : 1;
+
+                    ctx.save();
+                    ctx.translate(centerX, centerY);
+                    ctx.rotate(angle);
+                    ctx.fillStyle = isHour ? '#c9a962' : '#ffffff';
+                    ctx.fillRect(-width/2, -innerRadius, width, outerRadius - innerRadius);
+                    ctx.restore();
+                }
+
+                return new THREE.CanvasTexture(canvas);
+            }
+
+            static createSubdialTexture(size = 256) {
+                const canvas = document.createElement('canvas');
+                canvas.width = size;
+                canvas.height = size;
+                const ctx = canvas.getContext('2d');
+                const centerX = size / 2;
+                const centerY = size / 2;
+                const radius = size / 2 - 5;
+
+                // Background
+                const gradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, radius);
+                gradient.addColorStop(0, '#1a1a1a');
+                gradient.addColorStop(1, '#0a0a0a');
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Concentric grooves
+                for (let r = radius * 0.3; r < radius; r += radius * 0.15) {
+                    ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.arc(centerX, centerY, r, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+
+                // Markers
+                for (let i = 0; i < 10; i++) {
+                    const angle = (i / 10) * Math.PI * 2 - Math.PI / 2;
+                    const markerInner = radius * 0.7;
+                    const markerOuter = radius * 0.85;
+                    
+                    ctx.save();
+                    ctx.translate(centerX, centerY);
+                    ctx.rotate(angle);
+                    ctx.fillStyle = '#c9a962';
+                    ctx.fillRect(-1, -markerInner, 2, markerOuter - markerInner);
+                    ctx.restore();
+                }
+
+                return new THREE.CanvasTexture(canvas);
+            }
+
+            static createTypographyTexture(text, fontSize = 48, color = '#c9a962') {
+                const canvas = document.createElement('canvas');
+                canvas.width = 512;
+                canvas.height = 128;
+                const ctx = canvas.getContext('2d');
+
+                ctx.fillStyle = 'rgba(0,0,0,0)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                ctx.font = `${fontSize}px 'Arial'`;
+                ctx.fillStyle = color;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.letterSpacing = '0.2em';
+                ctx.fillText(text.toUpperCase(), canvas.width / 2, canvas.height / 2);
+
+                const texture = new THREE.CanvasTexture(canvas);
+                texture.transparent = true;
+                return texture;
+            }
+
+            static createGearsPatternTexture(size = 512) {
+                const canvas = document.createElement('canvas');
+                canvas.width = size;
+                canvas.height = size;
+                const ctx = canvas.getContext('2d');
+
+                ctx.fillStyle = '#1a1a1a';
+                ctx.fillRect(0, 0, size, size);
+
+                // Gear teeth pattern
+                const gearCount = 8;
+                const gearRadius = size / 4;
+                
+                for (let gx = 0; gx < 2; gx++) {
+                    for (let gy = 0; gy < 2; gy++) {
+                        const cx = (gx + 0.5) * size / 2;
+                        const cy = (gy + 0.5) * size / 2;
+                        
+                        ctx.save();
+                        ctx.translate(cx, cy);
+                        
+                        // Gear body
+                        ctx.fillStyle = '#2a2a2a';
+                        ctx.beginPath();
+                        ctx.arc(0, 0, gearRadius * 0.9, 0, Math.PI * 2);
+                        ctx.fill();
+                        
+                        // Teeth
+                        const teeth = 16;
+                        for (let t = 0; t < teeth; t++) {
+                            const angle = (t / teeth) * Math.PI * 2;
+                            ctx.rotate(angle);
+                            ctx.fillStyle = '#3a3a3a';
+                            ctx.fillRect(-3, gearRadius * 0.85, 6, gearRadius * 0.15);
+                            ctx.rotate(-angle);
+                        }
+                        
+                        ctx.restore();
+                    }
+                }
+
+                return new THREE.CanvasTexture(canvas);
+            }
+        }
+
+        // ============================================
+        // GEAR FACTORY
+        // ============================================
+        class GearFactory {
+            static createGear(teeth, outerRadius, innerRadius, thickness, material) {
+                const shape = new THREE.Shape();
+                const toothHeight = outerRadius - innerRadius;
+                const toothAngle = Math.PI / teeth;
+                const gapAngle = Math.PI / teeth;
+
+                // Generate involute-inspired tooth profile
+                for (let i = 0; i < teeth * 2; i++) {
+                    const angle = (i / (teeth * 2)) * Math.PI * 2;
+                    const isTooth = i % 2 === 0;
+                    
+                    if (i === 0) {
+                        const startAngle = angle - toothAngle * 0.3;
+                        shape.moveTo(Math.cos(startAngle) * innerRadius, Math.sin(startAngle) * innerRadius);
+                    }
+
+                    const currentAngle = angle;
+                    const radius = isTooth ? outerRadius : innerRadius;
+                    const x = Math.cos(currentAngle) * radius;
+                    const y = Math.sin(currentAngle) * radius;
+                    shape.lineTo(x, y);
+                }
+
+                shape.closePath();
+
+                const extrudeSettings = {
+                    depth: thickness,
+                    bevelEnabled: true,
+                    bevelThickness: 0.02,
+                    bevelSize: 0.02,
+                    bevelSegments: 3
+                };
+
+                const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+                geometry.center();
+                
+                const mesh = new THREE.Mesh(geometry, material);
+                mesh.castShadow = true;
+                mesh.receiveShadow = true;
+
+                // Add center hole
+                const holeShape = new THREE.Path();
+                holeShape.absarc(0, 0, innerRadius * 0.4, 0, Math.PI * 2, true);
+                shape.holes.push(holeShape);
+
+                return mesh;
+            }
+
+            static createDecorativeGear(radius, teeth, material) {
+                const shape = new THREE.Shape();
+                const innerR = radius * 0.6;
+                const outerR = radius;
+
+                for (let i = 0; i <= teeth * 2; i++) {
+                    const angle = (i / (teeth * 2)) * Math.PI * 2 - Math.PI / 2;
+                    const r = i % 2 === 0 ? outerR : innerR;
+                    const x = Math.cos(angle) * r;
+                    const y = Math.sin(angle) * r;
+                    
+                    if (i === 0) {
+                        shape.moveTo(x, y);
+                    } else {
+                        shape.lineTo(x, y);
+                    }
+                }
+
+                // Inner circle
+                const holePath = new THREE.Path();
+                holePath.absarc(0, 0, radius * 0.25, 0, Math.PI * 2, true);
+                shape.holes.push(holePath);
+
+                const extrudeSettings = {
+                    depth: 0.03,
+                    bevelEnabled: true,
+                    bevelThickness: 0.01,
+                    bevelSize: 0.01,
+                    bevelSegments: 2
+                };
+
+                const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+                geometry.center();
+                
+                const mesh = new THREE.Mesh(geometry, material);
+                mesh.castShadow = true;
+                mesh.receiveShadow = true;
+
+                return mesh;
+            }
+        }
+
+        // ============================================
+        // WATCH COMPONENT BUILDERS
+        // ============================================
+        class WatchBuilder {
+            constructor(materials) {
+                this.materials = materials;
+                this.watchGroup = new THREE.Group();
+                this.caseGroup = new THREE.Group();
+                this.bezelGroup = new THREE.Group();
+                this.crystalGroup = new THREE.Group();
+                this.dialGroup = new THREE.Group();
+                this.handsGroup = new THREE.Group();
+                this.movementGroup = new THREE.Group();
+                this.crownGroup = new THREE.Group();
+                this.pusherGroup = new THREE.Group();
+                this.braceletGroup = new THREE.Group();
+                this.rearAssembly = new THREE.Group();
+                
+                // Store references for animation
+                this.hourHand = null;
+                this.minuteHand = null;
+                this.secondHand = null;
+                this.subdialHands = [];
+                this.gears = [];
+                this.balanceWheel = null;
+                this.braceletLinks = [];
+            }
+
+            buildCompleteWatch() {
+                this.buildCase();
+                this.buildBezel();
+                this.buildCrystal();
+                this.buildDial();
+                this.buildHands();
+                this.buildMovement();
+                this.buildCrown();
+                this.buildPushers();
+                this.buildLugs();
+                this.buildBracelet();
+                this.buildRearAssembly();
+
+                // Assemble hierarchy
+                this.watchGroup.add(this.caseGroup);
+                this.watchGroup.add(this.bezelGroup);
+                this.watchGroup.add(this.crystalGroup);
+                this.watchGroup.add(this.dialGroup);
+                this.watchGroup.add(this.handsGroup);
+                this.watchGroup.add(this.movementGroup);
+                this.watchGroup.add(this.crownGroup);
+                this.watchGroup.add(this.pusherGroup);
+                this.watchGroup.add(this.braceletGroup);
+                this.watchGroup.add(this.rearAssembly);
+
+                // Position groups
+                this.caseGroup.position.z = 0;
+                this.bezelGroup.position.z = 0.02;
+                this.crystalGroup.position.z = 0.05;
+                this.dialGroup.position.z = 0.03;
+                this.handsGroup.position.z = 0.08;
+                this.movementGroup.position.z = -0.15;
+                this.crownGroup.position.set(CONFIG.caseDiameter / 2 + 0.05, 0, 0);
+                this.pusherGroup.position.z = 0;
+                this.braceletGroup.position.z = -0.1;
+                this.rearAssembly.position.z = -CONFIG.caseThickness / 2;
+
+                return this.watchGroup;
+            }
+
+            buildCase() {
+                const caseRadius = CONFIG.caseDiameter / 2;
+                const caseThickness = CONFIG.caseThickness;
+
+                // Main case body using LatheGeometry
+                const caseProfile = new THREE.Shape();
+                caseProfile.moveTo(caseRadius - 0.05, -caseThickness / 2);
+                caseProfile.lineTo(caseRadius - 0.05, caseThickness / 2 - 0.03);
+                caseProfile.lineTo(caseRadius - 0.02, caseThickness / 2);
+                caseProfile.lineTo(caseRadius * 0.85, caseThickness / 2);
+                caseProfile.lineTo(caseRadius * 0.85, -caseThickness / 2);
+                caseProfile.lineTo(caseRadius - 0.05, -caseThickness / 2);
+
+                const lathePoints = [];
+                const segments = 64;
+                for (let i = 0; i <= segments; i++) {
+                    const t = i / segments;
+                    const angle = t * Math.PI * 2;
+                    
+                    // Complex case profile
+                    const baseRadius = caseRadius;
+                    const bevelFactor = Math.sin(t * Math.PI * 2);
+                    
+                    let r = baseRadius;
+                    if (t < 0.1 || t > 0.9) {
+                        r = baseRadius - 0.02 + Math.abs(bevelFactor) * 0.03;
+                    } else if (t < 0.2 || t > 0.8) {
+                        r = baseRadius - 0.01;
+                    }
+                    
+                    const z = (t - 0.5) * caseThickness;
+                    lathePoints.push(new THREE.Vector2(r, z));
+                }
+
+                const caseGeometry = new THREE.LatheGeometry(lathePoints, 128);
+                const caseMesh = new THREE.Mesh(caseGeometry, this.materials.brushedTitanium);
+                caseMesh.castShadow = true;
+                caseMesh.receiveShadow = true;
+                this.caseGroup.add(caseMesh);
+
+                // Case back
+                const caseBackGeo = new THREE.CylinderGeometry(caseRadius * 0.9, caseRadius * 0.9, 0.05, 128);
+                const caseBack = new THREE.Mesh(caseBackGeo, this.materials.brushedTitanium);
+                caseBack.rotation.x = Math.PI / 2;
+                caseBack.position.z = -caseThickness / 2 - 0.025;
+                caseBack.castShadow = true;
+                this.caseGroup.add(caseBack);
+
+                // Engraved details on case side
+                this.addCaseEngravings(caseRadius, caseThickness);
+            }
+
+            addCaseEngravings(caseRadius, caseThickness) {
+                // Add subtle grooves around case
+                for (let i = 0; i < 3; i++) {
+                    const grooveRadius = caseRadius + 0.01;
+                    const grooveY = -caseThickness / 4 + i * caseThickness / 4;
+                    
+                    const grooveGeo = new THREE.TorusGeometry(grooveRadius, 0.005, 16, 128);
+                    const grooveMat = new THREE.MeshStandardMaterial({
+                        color: 0x1a1a1a,
+                        metalness: 0.8,
+                        roughness: 0.5
+                    });
+                    const groove = new THREE.Mesh(grooveGeo, grooveMat);
+                    groove.rotation.y = Math.PI / 2;
+                    groove.position.z = grooveY;
+                    this.caseGroup.add(groove);
+                }
+            }
+
+            buildBezel() {
+                const outerRadius = CONFIG.caseDiameter / 2 - 0.02;
+                const innerRadius = outerRadius - CONFIG.bezelWidth;
+
+                // Bezel ring
+                const bezelShape = new THREE.Shape();
+                bezelShape.absarc(0, 0, outerRadius, 0, Math.PI * 2, false);
+                const holePath = new THREE.Path();
+                holePath.absarc(0, 0, innerRadius, 0, Math.PI * 2, true);
+                bezelShape.holes.push(holePath);
+
+                const extrudeSettings = {
+                    depth: 0.04,
+                    bevelEnabled: true,
+                    bevelThickness: 0.005,
+                    bevelSize: 0.005,
+                    bevelSegments: 3
+                };
+
+                const bezelGeo = new THREE.ExtrudeGeometry(bezelShape, extrudeSettings);
+                const bezelMesh = new THREE.Mesh(bezelGeo, this.materials.polishedSteel);
+                bezelMesh.castShadow = true;
+                bezelMesh.receiveShadow = true;
+                this.bezelGroup.add(bezelMesh);
+
+                // Bezel markings
+                this.addBezelMarkings(innerRadius, outerRadius);
+
+                // Polished edge ring
+                const edgeGeo = new THREE.TorusGeometry(outerRadius - 0.01, 0.008, 16, 128);
+                const edgeMesh = new THREE.Mesh(edgeGeo, this.materials.polishedGold);
+                edgeMesh.rotation.x = Math.PI / 2;
+                edgeMesh.position.z = 0.02;
+                this.bezelGroup.add(edgeMesh);
+            }
+
+            addBezelMarkings(innerRadius, outerRadius) {
+                const canvas = document.createElement('canvas');
+                canvas.width = 512;
+                canvas.height = 512;
+                const ctx = canvas.getContext('2d');
+                const centerX = 256;
+                const centerY = 256;
+                const scale = 256 / (CONFIG.caseDiameter / 2);
+
+                ctx.clearRect(0, 0, 512, 512);
+
+                // Tachymeter scale markings
+                for (let i = 0; i < 60; i++) {
+                    const angle = (i / 60) * Math.PI * 2 - Math.PI / 2;
+                    const isMajor = i % 5 === 0;
+                    const markingLength = isMajor ? 15 : 8;
+                    const markingWidth = isMajor ? 2 : 1;
+
+                    ctx.save();
+                    ctx.translate(centerX, centerY);
+                    ctx.rotate(angle);
+                    
+                    ctx.fillStyle = isMajor ? '#ffffff' : '#888888';
+                    ctx.fillRect(-markingWidth / 2, -(innerRadius * scale), markingWidth, markingLength);
+                    
+                    // Numbers for major markings
+                    if (isMajor && i > 0) {
+                        const tachValue = Math.round(60 / (i / 60));
+                        if (tachValue <= 500) {
+                            ctx.rotate(Math.PI / 2);
+                            ctx.font = 'bold 14px Arial';
+                            ctx.textAlign = 'center';
+                            ctx.fillText(i.toString(), 0, -(innerRadius * scale) - 8);
+                        }
+                    }
+                    
+                    ctx.restore();
+                }
+
+                const texture = new THREE.CanvasTexture(canvas);
+                texture.transparent = true;
+                
+                const planeGeo = new THREE.PlaneGeometry(outerRadius * 2, outerRadius * 2);
+                const planeMat = new THREE.MeshBasicMaterial({
+                    map: texture,
+                    transparent: true,
+                    opacity: 0.9
+                });
+                const plane = new THREE.Mesh(planeGeo, planeMat);
+                plane.rotation.x = Math.PI / 2;
+                plane.position.z = 0.041;
+                this.bezelGroup.add(plane);
+            }
+
+            buildCrystal() {
+                const crystalRadius = CONFIG.caseDiameter / 2 - 0.05;
+
+                // Domed sapphire crystal
+                const crystalGeo = new THREE.SphereGeometry(crystalRadius, 64, 32, 0, Math.PI * 2, 0, Math.PI / 8);
+                const crystalMesh = new THREE.Mesh(crystalGeo, this.materials.sapphire);
+                crystalMesh.position.z = 0.03;
+                crystalMesh.castShadow = true;
+                this.crystalGroup.add(crystalMesh);
+
+                // Anti-reflective coating illusion (subtle blue tint layer)
+                const arCoatingGeo = new THREE.SphereGeometry(crystalRadius * 1.01, 64, 32, 0, Math.PI * 2, 0, Math.PI / 12);
+                const arCoatingMat = new THREE.MeshPhysicalMaterial({
+                    color: 0x4466aa,
+                    metalness: 0.0,
+                    roughness: 0.01,
+                    transmission: 0.3,
+                    transparent: true,
+                    opacity: 0.1
+                });
+                const arCoating = new THREE.Mesh(arCoatingGeo, arCoatingMat);
+                arCoating.position.z = 0.035;
+                this.crystalGroup.add(arCoating);
+            }
+
+            buildDial() {
+                const dialRadius = CONFIG.caseDiameter / 2 - CONFIG.bezelWidth - 0.05;
+
+                // Layer 1: Base Metal Plate
+                this.createDialBaseLayer(dialRadius);
+
+                // Layer 2: Sunburst Surface
+                this.createDialSunburstLayer(dialRadius);
+
+                // Layer 3: Chapter Ring
+                this.createChapterRing(dialRadius);
+
+                // Layer 4: Hour Indices
+                this.createHourIndices(dialRadius);
+
+                // Layer 5: Minute Markers
+                this.createMinuteMarkers(dialRadius);
+
+                // Layer 6: Subdials
+                this.createSubdials(dialRadius);
+
+                // Layer 7: Typography
+                this.createDialTypography(dialRadius);
+
+                // Layer 8: Center Hub
+                this.createCenterHub();
+            }
+
+            createDialBaseLayer(radius) {
+                // Brushed metal base with procedural texture
+                const brushedTexture = ProceduralTextureGenerator.createBrushedMetalTexture(512);
+                
+                const baseGeo = new THREE.CircleGeometry(radius, 128);
+                const baseMat = new THREE.MeshStandardMaterial({
+                    map: brushedTexture,
+                    color: 0x1a1a1a,
+                    metalness: 0.95,
+                    roughness: 0.35
+                });
+                const baseMesh = new THREE.Mesh(baseGeo, baseMat);
+                baseMesh.receiveShadow = true;
+                this.dialGroup.add(baseMesh);
+
+                // Add subtle radial brushing effect
+                const radialBrushGeo = new THREE.CircleGeometry(radius, 128);
+                const radialBrushMat = new THREE.MeshStandardMaterial({
+                    color: 0x2a2a2a,
+                    metalness: 0.9,
+                    roughness: 0.4,
+                    transparent: true,
+                    opacity: 0.8
+                });
+                const radialBrush = new THREE.Mesh(radialBrushGeo, radialBrushMat);
+                radialBrush.position.z = 0.001;
+                this.dialGroup.add(radialBrush);
+            }
+
+            createDialSunburstLayer(radius) {
+                const sunburstTexture = ProceduralTextureGenerator.createSunburstTexture(512);
+                
+                const sunburstGeo = new THREE.CircleGeometry(radius * 0.95, 128);
+                const sunburstMat = new THREE.MeshStandardMaterial({
+                    map: sunburstTexture,
+                    color: 0x2a2a2a,
+                    metalness: 1.0,
+                    roughness: 0.2,
+                    transparent: true,
+                    opacity: 0.7
+                });
+                const sunburstMesh = new THREE.Mesh(sunburstGeo, sunburstMat);
+                sunburstMesh.position.z = 0.002;
+                this.dialGroup.add(sunburstMesh);
+            }
+
+            createChapterRing(dialRadius) {
+                const outerRadius = dialRadius * 0.95;
+                const innerRadius = dialRadius * 0.85;
+
+                const ringShape = new THREE.Shape();
+                ringShape.absarc(0, 0, outerRadius, 0, Math.PI * 2, false);
+                const holePath = new THREE.Path();
+                holePath.absarc(0, 0, innerRadius, 0, Math.PI * 2, true);
+                ringShape.holes.push(holePath);
+
+                const extrudeSettings = {
+                    depth: 0.015,
+                    bevelEnabled: true,
+                    bevelThickness: 0.003,
+                    bevelSize: 0.003,
+                    bevelSegments: 2
+                };
+
+                const ringGeo = new THREE.ExtrudeGeometry(ringShape, extrudeSettings);
+                const ringMesh = new THREE.Mesh(ringGeo, this.materials.champagneGold);
+                ringMesh.position.z = 0.005;
+                ringMesh.castShadow = true;
+                ringMesh.receiveShadow = true;
+                this.dialGroup.add(ringMesh);
+
+                // Engraved minute track
+                this.createMinuteTrack(innerRadius, outerRadius);
+            }
+
+            createMinuteTrack(innerRadius, outerRadius) {
+                const canvas = document.createElement('canvas');
+                canvas.width = 512;
+                canvas.height = 512;
+                const ctx = canvas.getContext('2d');
+                const centerX = 256;
+                const centerY = 256;
+                const scale = 256 / (CONFIG.caseDiameter / 2);
+
+                ctx.clearRect(0, 0, 512, 512);
+
+                // 60 minute markers
+                for (let i = 0; i < 60; i++) {
+                    const angle = (i / 60) * Math.PI * 2 - Math.PI / 2;
+                    const isHour = i % 5 === 0;
+                    const markerLength = isHour ? 20 : 10;
+                    const markerWidth = isHour ? 2.5 : 1;
+
+                    ctx.save();
+                    ctx.translate(centerX, centerY);
+                    ctx.rotate(angle);
+                    
+                    ctx.fillStyle = isHour ? '#c9a962' : '#ffffff';
+                    ctx.fillRect(
+                        -markerWidth / 2,
+                        -(innerRadius * scale) - markerLength,
+                        markerWidth,
+                        markerLength
+                    );
+                    
+                    ctx.restore();
+                }
+
+                const texture = new THREE.CanvasTexture(canvas);
+                texture.transparent = true;
+
+                const planeGeo = new THREE.PlaneGeometry(innerRadius * 2, innerRadius * 2);
+                const planeMat = new THREE.MeshBasicMaterial({
+                    map: texture,
+                    transparent: true,
+                    opacity: 0.95
+                });
+                const plane = new THREE.Mesh(planeGeo, planeMat);
+                plane.rotation.x = Math.PI / 2;
+                plane.position.z = 0.021;
+                this.dialGroup.add(plane);
+            }
+
+            createHourIndices(dialRadius) {
+                const indexRadius = dialRadius * 0.9;
+
+                for (let i = 0; i < 12; i++) {
+                    const angle = (i / 12) * Math.PI * 2 - Math.PI / 2;
+                    const distance = indexRadius;
+
+                    // Create 3D extruded hour marker
+                    const markerShape = new THREE.Shape();
+                    const markerWidth = 0.04;
+                    const markerLength = 0.12;
+                    
+                    markerShape.moveTo(-markerWidth / 2, 0);
+                    markerShape.lineTo(markerWidth / 2, 0);
+                    markerShape.lineTo(markerWidth / 2, markerLength);
+                    markerShape.lineTo(-markerWidth / 2, markerLength);
+                    markerShape.closePath();
+
+                    const extrudeSettings = {
+                        depth: 0.025,
+                        bevelEnabled: true,
+                        bevelThickness: 0.003,
+                        bevelSize: 0.003,
+                        bevelSegments: 3
+                    };
+
+                    const markerGeo = new THREE.ExtrudeGeometry(markerShape, extrudeSettings);
+                    const markerMat = i % 3 === 0 ? this.materials.champagneGold : this.materials.polishedSteel;
+                    
+                    const marker = new THREE.Mesh(markerGeo, markerMat);
+                    marker.position.set(
+                        Math.cos(angle) * distance,
+                        Math.sin(angle) * distance,
+                        0.025
+                    );
+                    marker.rotation.z = angle + Math.PI / 2;
+                    marker.castShadow = true;
+                    marker.receiveShadow = true;
+                    this.dialGroup.add(marker);
+
+                    // Add luminescent insert
+                    const lumeGeo = new THREE.BoxGeometry(markerWidth * 0.6, markerLength * 0.6, 0.026);
+                    const lumeMat = new THREE.MeshStandardMaterial({
+                        color: 0xaaccff,
+                        emissive: 0x2244aa,
+                        emissiveIntensity: 0.3
+                    });
+                    const lume = new THREE.Mesh(lumeGeo, lumeMat);
+                    lume.position.set(
+                        Math.cos(angle) * distance,
+                        Math.sin(angle) * distance,
+                        0.051
+                    );
+                    lume.rotation.z = angle + Math.PI / 2;
+                    this.dialGroup.add(lume);
+                }
+            }
+
+            createMinuteMarkers(dialRadius) {
+                const markerRadius = dialRadius * 0.92;
+
+                for (let i = 0; i < 60; i++) {
+                    if (i % 5 !== 0) { // Skip positions where hour indices are
+                        const angle = (i / 60) * Math.PI * 2 - Math.PI / 2;
+                        const distance = markerRadius;
+
+                        const markerGeo = new THREE.BoxGeometry(0.015, 0.05, 0.01);
+                        const markerMat = new THREE.MeshStandardMaterial({
+                            color: 0xffffff,
+                            metalness: 0.8,
+                            roughness: 0.2
+                        });
+                        
+                        const marker = new THREE.Mesh(markerGeo, markerMat);
+                        marker.position.set(
+                            Math.cos(angle) * distance,
+                            Math.sin(angle) * distance,
+                            0.015
+                        );
+                        marker.rotation.z = angle + Math.PI / 2;
+                        this.dialGroup.add(marker);
+                    }
+                }
+            }
+
+            createSubdials(dialRadius) {
+                const subdialRadius = dialRadius * 0.22;
+                const subdialPositions = [
+                    { x: -dialRadius * 0.45, y: 0, label: 'SEC' },
+                    { x: dialRadius * 0.45, y: dialRadius * 0.25, label: 'MIN' },
+                    { x: dialRadius * 0.45, y: -dialRadius * 0.25, label: 'HOUR' }
+                ];
+
+                subdialPositions.forEach((pos, index) => {
+                    this.createSingleSubdial(pos.x, pos.y, subdialRadius, pos.label, index);
+                });
+            }
+
+            createSingleSubdial(x, y, radius, label, index) {
+                const subdialGroup = new THREE.Group();
+
+                // Recessed base
+                const baseGeo = new THREE.CircleGeometry(radius, 64);
+                const baseMat = new THREE.MeshStandardMaterial({
+                    color: 0x0a0a0a,
+                    metalness: 0.9,
+                    roughness: 0.3
+                });
+                const base = new THREE.Mesh(baseGeo, baseMat);
+                base.position.z = -0.01;
+                subdialGroup.add(base);
+
+                // Concentric grooves
+                for (let i = 1; i <= 3; i++) {
+                    const grooveRadius = radius * (i / 4);
+                    const grooveGeo = new THREE.TorusGeometry(grooveRadius, 0.003, 16, 64);
+                    const grooveMat = new THREE.MeshStandardMaterial({
+                        color: 0x1a1a1a,
+                        metalness: 0.8,
+                        roughness: 0.4
+                    });
+                    const groove = new THREE.Mesh(grooveGeo, grooveMat);
+                    groove.rotation.x = Math.PI / 2;
+                    groove.position.z = -0.008;
+                    subdialGroup.add(groove);
+                }
+
+                // Metallic ring
+                const ringGeo = new THREE.TorusGeometry(radius * 0.95, 0.008, 16, 64);
+                const ringMat = this.materials.champagneGold;
+                const ring = new THREE.Mesh(ringGeo, ringMat);
+                ring.rotation.x = Math.PI / 2;
+                ring.position.z = 0.005;
+                subdialGroup.add(ring);
+
+                // Markers
+                for (let i = 0; i < 10; i++) {
+                    const angle = (i / 10) * Math.PI * 2 - Math.PI / 2;
+                    const markerDist = radius * 0.75;
+                    
+                    const markerGeo = new THREE.BoxGeometry(0.008, 0.03, 0.005);
+                    const markerMat = new THREE.MeshStandardMaterial({
+                        color: 0xc9a962,
+                        metalness: 1.0,
+                        roughness: 0.1
+                    });
+                    
+                    const marker = new THREE.Mesh(markerGeo, markerMat);
+                    marker.position.set(
+                        Math.cos(angle) * markerDist,
+                        Math.sin(angle) * markerDist,
+                        0.006
+                    );
+                    marker.rotation.z = angle + Math.PI / 2;
+                    subdialGroup.add(marker);
+                }
+
+                // Miniature hand
+                const handShape = new THREE.Shape();
+                handShape.moveTo(0, -radius * 0.1);
+                handShape.lineTo(0.015, 0);
+                handShape.lineTo(0, radius * 0.8);
+                handShape.lineTo(-0.015, 0);
+                handShape.closePath();
+
+                const handExtrudeSettings = {
+                    depth: 0.003,
+                    bevelEnabled: false
+                };
+
+                const handGeo = new THREE.ExtrudeGeometry(handShape, handExtrudeSettings);
+                const handMat = new THREE.MeshStandardMaterial({
+                    color: 0xc9a962,
+                    metalness: 1.0,
+                    roughness: 0.1
+                });
+                
+                const hand = new THREE.Mesh(handGeo, handMat);
+                hand.position.z = 0.01;
+                subdialGroup.add(hand);
+
+                // Store reference for animation
+                this.subdialHands.push({
+                    mesh: hand,
+                    speed: index === 0 ? 1.0 : (index === 1 ? 0.1 : 0.008),
+                    offset: index * 0.5
+                });
+
+                // Label
+                const labelTexture = ProceduralTextureGenerator.createTypographyTexture(label, 24, '#c9a962');
+                const labelGeo = new THREE.PlaneGeometry(radius * 0.5, radius * 0.2);
+                const labelMat = new THREE.MeshBasicMaterial({
+                    map: labelTexture,
+                    transparent: true
+                });
+                const labelMesh = new THREE.Mesh(labelGeo, labelMat);
+                labelMesh.position.set(0, -radius * 0.5, 0.008);
+                subdialGroup.add(labelMesh);
+
+                subdialGroup.position.set(x, y, 0);
+                this.dialGroup.add(subdialGroup);
+            }
+
+            createDialTypography(dialRadius) {
+                // Brand name at top
+                const brandTexture = ProceduralTextureGenerator.createTypographyTexture('CHRONOS', 48, '#c9a962');
+                const brandGeo = new THREE.PlaneGeometry(dialRadius * 0.6, dialRadius * 0.15);
+                const brandMat = new THREE.MeshBasicMaterial({
+                    map: brandTexture,
+                    transparent: true
+                });
+                const brandMesh = new THREE.Mesh(brandGeo, brandMat);
+                brandMesh.position.set(0, dialRadius * 0.55, 0.03);
+                this.dialGroup.add(brandMesh);
+
+                // "AUTOMATIC" text
+                const autoTexture = ProceduralTextureGenerator.createTypographyTexture('AUTOMATIC', 28, '#888888');
+                const autoGeo = new THREE.PlaneGeometry(dialRadius * 0.35, dialRadius * 0.1);
+                const autoMat = new THREE.MeshBasicMaterial({
+                    map: autoTexture,
+                    transparent: true
+                });
+                const autoMesh = new THREE.Mesh(autoGeo, autoMat);
+                autoMesh.position.set(0, -dialRadius * 0.35, 0.03);
+                this.dialGroup.add(autoMesh);
+
+                // "SWISS MADE" at bottom
+                const swissTexture = ProceduralTextureGenerator.createTypographyTexture('SWISS MADE', 20, '#888888');
+                const swissGeo = new THREE.PlaneGeometry(dialRadius * 0.25, dialRadius * 0.08);
+                const swissMat = new THREE.MeshBasicMaterial({
+                    map: swissTexture,
+                    transparent: true
+                });
+                const swissMesh = new THREE.Mesh(swissGeo, swissMat);
+                swissMesh.position.set(0, -dialRadius * 0.85, 0.03);
+                this.dialGroup.add(swissMesh);
+
+                // "CHRONOGRAPH" text
+                const chronoTexture = ProceduralTextureGenerator.createTypographyTexture('CHRONOGRAPH', 24, '#c9a962');
+                const chronoGeo = new THREE.PlaneGeometry(dialRadius * 0.4, dialRadius * 0.1);
+                const chronoMat = new THREE.MeshBasicMaterial({
+                    map: chronoTexture,
+                    transparent: true
+                });
+                const chronoMesh = new THREE.Mesh(chronoGeo, chronoMat);
+                chronoMesh.position.set(0, dialRadius * 0.4, 0.03);
+                this.dialGroup.add(chronoMesh);
+            }
+
+            createCenterHub() {
+                // Multi-layered center hub
+                const layers = [
+                    { radius: 0.08, height: 0.04, material: this.materials.polishedGold },
+                    { radius: 0.06, height: 0.06, material: this.materials.polishedSteel },
+                    { radius: 0.03, height: 0.08, material: this.materials.champagneGold }
+                ];
+
+                layers.forEach((layer, i) => {
+                    const hubGeo = new THREE.CylinderGeometry(layer.radius, layer.radius, layer.height, 32);
+                    const hubMesh = new THREE.Mesh(hubGeo, layer.material);
+                    hubMesh.position.z = 0.05 + i * 0.02;
+                    hubMesh.castShadow = true;
+                    this.dialGroup.add(hubMesh);
+                });
+
+                // Tiny screws around center
+                for (let i = 0; i < 4; i++) {
+                    const angle = (i / 4) * Math.PI * 2;
+                    const screwDist = 0.12;
+                    
+                    const screwHeadGeo = new THREE.CylinderGeometry(0.015, 0.015, 0.01, 6);
+                    const screwHeadMat = this.materials.polishedSteel;
+                    const screwHead = new THREE.Mesh(screwHeadGeo, screwHeadMat);
+                    
+                    screwHead.position.set(
+                        Math.cos(angle) * screwDist,
+                        Math.sin(angle) * screwDist,
+                        0.045
+                    );
+                    screwHead.rotation.x = Math.PI / 2;
+                    screwHead.rotation.z = angle;
+                    this.dialGroup.add(screwHead);
+                }
+            }
+
+            buildHands() {
+                const handLength = CONFIG.caseDiameter / 2 * 0.7;
+
+                // Hour hand
+                this.hourHand = this.createHourHand(handLength * 0.65);
+                this.hourHand.position.z = 0.1;
+                this.handsGroup.add(this.hourHand);
+
+                // Minute hand
+                this.minuteHand = this.createMinuteHand(handLength * 0.9);
+                this.minuteHand.position.z = 0.12;
+                this.handsGroup.add(this.minuteHand);
+
+                // Second hand
+                this.secondHand = this.createSecondHand(handLength);
+                this.secondHand.position.z = 0.14;
+                this.handsGroup.add(this.secondHand);
+
+                // Central pin
+                const pinGeo = new THREE.CylinderGeometry(0.02, 0.02, 0.15, 16);
+                const pinMat = this.materials.polishedGold;
+                const pin = new THREE.Mesh(pinGeo, pinMat);
+                pin.position.z = 0.16;
+                this.handsGroup.add(pin);
+            }
+
+            createHourHand(length) {
+                const handShape = new THREE.Shape();
+                const width = length * 0.08;
+                
+                handShape.moveTo(0, -length * 0.2);
+                handShape.lineTo(width, 0);
+                handShape.lineTo(width * 0.6, length * 0.8);
+                handShape.lineTo(0, length);
+                handShape.lineTo(-width * 0.6, length * 0.8);
+                handShape.lineTo(-width, 0);
+                handShape.closePath();
+
+                const extrudeSettings = {
+                    depth: 0.015,
+                    bevelEnabled: true,
+                    bevelThickness: 0.002,
+                    bevelSize: 0.002,
+                    bevelSegments: 2
+                };
+
+                const handGeo = new THREE.ExtrudeGeometry(handShape, extrudeSettings);
+                const handMat = new THREE.MeshStandardMaterial({
+                    color: 0xc9a962,
+                    metalness: 1.0,
+                    roughness: 0.15
+                });
+
+                const hand = new THREE.Mesh(handGeo, handMat);
+                hand.castShadow = true;
+                
+                // Luminous insert
+                const lumeShape = new THREE.Shape();
+                lumeShape.moveTo(-width * 0.3, length * 0.3);
+                lumeShape.lineTo(width * 0.3, length * 0.3);
+                lumeShape.lineTo(width * 0.25, length * 0.7);
+                lumeShape.lineTo(-width * 0.25, length * 0.7);
+                lumeShape.closePath();
+
+                const lumeGeo = new THREE.ExtrudeGeometry(lumeShape, { depth: 0.016, bevelEnabled: false });
+                const lumeMat = new THREE.MeshStandardMaterial({
+                    color: 0xaaccff,
+                    emissive: 0x2244aa,
+                    emissiveIntensity: 0.4
+                });
+                const lume = new THREE.Mesh(lumeGeo, lumeMat);
+                hand.add(lume);
+
+                return hand;
+            }
+
+            createMinuteHand(length) {
+                const handShape = new THREE.Shape();
+                const width = length * 0.05;
+                
+                handShape.moveTo(0, -length * 0.15);
+                handShape.lineTo(width, -length * 0.05);
+                handShape.lineTo(width * 0.5, length * 0.9);
+                handShape.lineTo(0, length);
+                handShape.lineTo(-width * 0.5, length * 0.9);
+                handShape.lineTo(-width, -length * 0.05);
+                handShape.closePath();
+
+                const extrudeSettings = {
+                    depth: 0.012,
+                    bevelEnabled: true,
+                    bevelThickness: 0.002,
+                    bevelSize: 0.002,
+                    bevelSegments: 2
+                };
+
+                const handGeo = new THREE.ExtrudeGeometry(handShape, extrudeSettings);
+                const handMat = new THREE.MeshStandardMaterial({
+                    color: 0xc9a962,
+                    metalness: 1.0,
+                    roughness: 0.15
+                });
+
+                const hand = new THREE.Mesh(handGeo, handMat);
+                hand.castShadow = true;
+
+                // Counterweight
+                const counterGeo = new THREE.CircleGeometry(width * 1.5, 16);
+                const counterMat = this.materials.polishedGold;
+                const counter = new THREE.Mesh(counterGeo, counterMat);
+                counter.position.z = 0.013;
+                hand.add(counter);
+
+                return hand;
+            }
+
+            createSecondHand(length) {
+                const handShape = new THREE.Shape();
+                const width = 0.015;
+                
+                // Long thin hand
+                handShape.moveTo(-width, -length * 0.2);
+                handShape.lineTo(width, -length * 0.2);
+                handShape.lineTo(width * 0.5, 0);
+                handShape.lineTo(width, length * 0.85);
+                handShape.lineTo(0, length);
+                handShape.lineTo(-width, length * 0.85);
+                handShape.lineTo(-width * 0.5, 0);
+                handShape.closePath();
+
+                const extrudeSettings = {
+                    depth: 0.008,
+                    bevelEnabled: false
+                };
+
+                const handGeo = new THREE.ExtrudeGeometry(handShape, extrudeSettings);
+                const handMat = new THREE.MeshStandardMaterial({
+                    color: 0xc9a962,
+                    metalness: 1.0,
+                    roughness: 0.1
+                });
+
+                const hand = new THREE.Mesh(handGeo, handMat);
+                hand.castShadow = true;
+
+                // Counterweight circle
+                const counterGeo = new THREE.TorusGeometry(0.04, 0.008, 8, 16);
+                const counterMat = this.materials.roseGold;
+                const counter = new THREE.Mesh(counterGeo, counterMat);
+                counter.position.z = 0.009;
+                counter.position.y = -length * 0.25;
+                hand.add(counter);
+
+                // Red tip
+                const tipGeo = new THREE.BoxGeometry(0.01, 0.03, 0.009);
+                const tipMat = new THREE.MeshStandardMaterial({
+                    color: 0xcc0000,
+                    emissive: 0x440000
+                });
+                const tip = new THREE.Mesh(tipGeo, tipMat);
+                tip.position.y = length * 0.95;
+                hand.add(tip);
+
+                return hand;
+            }
+
+            buildMovement() {
+                // Create intricate mechanical movement visible through exhibition caseback
+                
+                // Base plate
+                const basePlateGeo = new THREE.CircleGeometry(CONFIG.caseDiameter / 2 * 0.85, 64);
+                const basePlateMat = this.materials.gunmetal;
+                const basePlate = new THREE.Mesh(basePlateGeo, basePlateMat);
+                basePlate.rotation.x = Math.PI / 2;
+                this.movementGroup.add(basePlate);
+
+                // Create multiple gears
+                this.createMovementGears();
+
+                // Balance wheel
+                this.createBalanceWheel();
+
+                // Bridges
+                this.createBridges();
+
+                // Jewels
+                this.createJewels();
+
+                // Mainspring barrel
+                this.createMainspringBarrel();
+            }
+
+            createMovementGears() {
+                const gearConfigs = [
+                    { teeth: 60, radius: 0.35, x: 0.3, y: 0.2, material: this.materials.polishedGold, speed: 0.5 },
+                    { teeth: 48, radius: 0.28, x: -0.25, y: 0.15, material: this.materials.polishedSteel, speed: -0.6 },
+                    { teeth: 40, radius: 0.22, x: 0, y: -0.25, material: this.materials.champagneGold, speed: 0.7 },
+                    { teeth: 32, radius: 0.18, x: -0.3, y: -0.2, material: this.materials.polishedGold, speed: -0.8 },
+                    { teeth: 24, radius: 0.14, x: 0.25, y: -0.3, material: this.materials.polishedSteel, speed: 1.0 },
+                    { teeth: 20, radius: 0.12, x: -0.15, y: 0.35, material: this.materials.champagneGold, speed: -1.2 },
+                    { teeth: 16, radius: 0.1, x: 0.4, y: 0, material: this.materials.polishedGold, speed: 1.5 },
+                    { teeth: 14, radius: 0.09, x: -0.35, y: 0.3, material: this.materials.polishedSteel, speed: -1.7 },
+                    { teeth: 12, radius: 0.08, x: 0.15, y: 0.4, material: this.materials.champagneGold, speed: 2.0 },
+                    { teeth: 10, radius: 0.07, x: -0.4, y: -0.15, material: this.materials.polishedGold, speed: -2.5 },
+                    { teeth: 8, radius: 0.06, x: 0.35, y: 0.35, material: this.materials.polishedSteel, speed: 3.0 },
+                    { teeth: 6, radius: 0.05, x: -0.2, y: -0.35, material: this.materials.champagneGold, speed: -4.0 }
+                ];
+
+                gearConfigs.forEach(config => {
+                    const gear = GearFactory.createDecorativeGear(config.radius, config.teeth, config.material);
+                    gear.position.set(config.x, config.y, 0.05);
+                    gear.userData.speed = config.speed;
+                    this.movementGroup.add(gear);
+                    this.gears.push(gear);
+                });
+            }
+
+            createBalanceWheel() {
+                const balanceGroup = new THREE.Group();
+
+                // Outer ring
+                const ringGeo = new THREE.TorusGeometry(0.12, 0.015, 16, 64);
+                const ringMat = this.materials.polishedGold;
+                const ring = new THREE.Mesh(ringGeo, ringMat);
+                balanceGroup.add(ring);
+
+                // Spokes
+                for (let i = 0; i < 4; i++) {
+                    const angle = (i / 4) * Math.PI * 2;
+                    const spokeGeo = new THREE.BoxGeometry(0.02, 0.1, 0.01);
+                    const spokeMat = this.materials.polishedSteel;
+                    const spoke = new THREE.Mesh(spokeGeo, spokeMat);
+                    spoke.position.z = 0.01;
+                    spoke.rotation.z = angle;
+                    balanceGroup.add(spoke);
+                }
+
+                // Center hub
+                const hubGeo = new THREE.CylinderGeometry(0.025, 0.025, 0.02, 16);
+                const hubMat = this.materials.polishedGold;
+                const hub = new THREE.Mesh(hubGeo, hubMat);
+                hub.rotation.x = Math.PI / 2;
+                hub.position.z = 0.015;
+                balanceGroup.add(hub);
+
+                // Hairspring (spiral)
+                const hairspringPoints = [];
+                for (let i = 0; i < 720; i++) {
+                    const t = i / 720;
+                    const angle = t * Math.PI * 4;
+                    const radius = 0.02 + t * 0.08;
+                    hairspringPoints.push(new THREE.Vector3(
+                        Math.cos(angle) * radius,
+                        Math.sin(angle) * radius,
+                        0.025 + t * 0.01
+                    ));
+                }
+                const hairspringGeo = new THREE.BufferGeometry().setFromPoints(hairspringPoints);
+                const hairspringMat = new THREE.LineBasicMaterial({ 
+                    color: 0xc9a962,
+                    linewidth: 1
+                });
+                const hairspring = new THREE.Line(hairspringGeo, hairspringMat);
+                balanceGroup.add(hairspring);
+
+                balanceGroup.position.set(0.5, 0.3, 0.06);
+                this.balanceWheel = balanceGroup;
+                this.movementGroup.add(balanceGroup);
+            }
+
+            createBridges() {
+                // Main bridge
+                const bridgeShape = new THREE.Shape();
+                bridgeShape.moveTo(-0.4, -0.2);
+                bridgeShape.lineTo(0.4, -0.2);
+                bridgeShape.lineTo(0.35, 0.3);
+                bridgeShape.lineTo(-0.35, 0.3);
+                bridgeShape.closePath();
+
+                const bridgeExtrudeSettings = {
+                    depth: 0.02,
+                    bevelEnabled: true,
+                    bevelThickness: 0.003,
+                    bevelSize: 0.003,
+                    bevelSegments: 2
+                };
+
+                const bridgeGeo = new THREE.ExtrudeGeometry(bridgeShape, bridgeExtrudeSettings);
+                const bridgeMat = this.materials.polishedSteel;
+                const bridge = new THREE.Mesh(bridgeGeo, bridgeMat);
+                bridge.position.z = 0.08;
+                this.movementGroup.add(bridge);
+
+                // Decorative Côtes de Genève pattern
+                this.addGenevaStripes(bridge, 0.4, 0.5);
+
+                // Screw decorations on bridges
+                for (let i = 0; i < 4; i++) {
+                    const angle = (i / 4) * Math.PI * 2 + 0.3;
+                    const screwDist = 0.3;
+                    
+                    const screwGeo = new THREE.CylinderGeometry(0.02, 0.02, 0.025, 6);
+                    const screwMat = this.materials.polishedGold;
+                    const screw = new THREE.Mesh(screwGeo, screwMat);
+                    screw.rotation.x = Math.PI / 2;
+                    screw.position.set(
+                        Math.cos(angle) * screwDist * 0.7,
+                        Math.sin(angle) * screwDist,
+                        0.102
+                    );
+                    this.movementGroup.add(screw);
+                }
+            }
+
+            addGenevaStripes(mesh, width, height) {
+                // Create stripe pattern texture
+                const canvas = document.createElement('canvas');
+                canvas.width = 256;
+                canvas.height = 256;
+                const ctx = canvas.getContext('2d');
+
+                ctx.fillStyle = '#8a8a8a';
+                ctx.fillRect(0, 0, 256, 256);
+
+                for (let i = 0; i < 256; i += 4) {
+                    const alpha = 0.1 + Math.sin(i * 0.1) * 0.05;
+                    ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+                    ctx.fillRect(0, i, 256, 2);
+                }
+
+                const texture = new THREE.CanvasTexture(canvas);
+                texture.wrapS = THREE.RepeatWrapping;
+                texture.wrapT = THREE.RepeatWrapping;
+                texture.repeat.set(4, 4);
+                
+                mesh.material.map = texture;
+                mesh.material.needsUpdate = true;
+            }
+
+            createJewels() {
+                const jewelPositions = [
+                    { x: 0.3, y: 0.2 },
+                    { x: -0.25, y: 0.15 },
+                    { x: 0, y: -0.25 },
+                    { x: -0.3, y: -0.2 },
+                    { x: 0.25, y: -0.3 }
+                ];
+
+                jewelPositions.forEach(pos => {
+                    const jewelGeo = new THREE.CylinderGeometry(0.025, 0.025, 0.015, 16);
+                    const jewel = new THREE.Mesh(jewelGeo, this.materials.ruby);
+                    jewel.rotation.x = Math.PI / 2;
+                    jewel.position.set(pos.x, pos.y, 0.065);
+                    this.movementGroup.add(jewel);
+                });
+            }
+
+            createMainspringBarrel() {
+                const barrelGroup = new THREE.Group();
+
+                // Barrel body
+                const barrelGeo = new THREE.CylinderGeometry(0.25, 0.25, 0.04, 64);
+                const barrelMat = this.materials.polishedGold;
+                const barrel = new THREE.Mesh(barrelGeo, barrelMat);
+                barrel.rotation.x = Math.PI / 2;
+                barrelGroup.add(barrel);
+
+                // Barrel lid with teeth
+                const teethShape = new THREE.Shape();
+                for (let i = 0; i <= 48; i++) {
+                    const angle = (i / 48) * Math.PI * 2;
+                    const r = i % 2 === 0 ? 0.26 : 0.24;
+                    teethShape.lineTo(Math.cos(angle) * r, Math.sin(angle) * r);
+                }
+                teethShape.closePath();
+
+                const teethExtrudeSettings = {
+                    depth: 0.015,
+                    bevelEnabled: false
+                };
+
+                const teethGeo = new THREE.ExtrudeGeometry(teethShape, teethExtrudeSettings);
+                const teethMat = this.materials.polishedSteel;
+                const teeth = new THREE.Mesh(teethGeo, teethMat);
+                teeth.position.z = 0.025;
+                barrelGroup.add(teeth);
+
+                // Decorative spiral on lid
+                const spiralPoints = [];
+                for (let i = 0; i < 360; i++) {
+                    const t = i / 360;
+                    const angle = t * Math.PI * 6;
+                    const radius = t * 0.18;
+                    spiralPoints.push(new THREE.Vector2(
+                        Math.cos(angle) * radius,
+                        Math.sin(angle) * radius
+                    ));
+                }
+                const spiralGeo = new THREE.BufferGeometry().setFromPoints(spiralPoints);
+                const spiralMat = new THREE.LineBasicMaterial({ color: 0xc9a962 });
+                const spiral = new THREE.Line(spiralGeo, spiralMat);
+                spiral.position.z = 0.041;
+                barrelGroup.add(spiral);
+
+                barrelGroup.position.set(-0.5, -0.1, 0.05);
+                this.movementGroup.add(barrelGroup);
+            }
+
+            buildCrown() {
+                const crownGroup = new THREE.Group();
+
+                // Crown body
+                const crownGeo = new THREE.CylinderGeometry(0.04, 0.04, 0.08, 32);
+                const crownMat = this.materials.champagneGold;
+                const crown = new THREE.Mesh(crownGeo, crownMat);
+                crown.rotation.z = Math.PI / 2;
+                crownGroup.add(crown);
+
+                // Knurled edge (ridged grip)
+                for (let i = 0; i < 24; i++) {
+                    const angle = (i / 24) * Math.PI * 2;
+                    const ridgeGeo = new THREE.BoxGeometry(0.015, 0.02, 0.06);
+                    const ridgeMat = this.materials.polishedGold;
+                    const ridge = new THREE.Mesh(ridgeGeo, ridgeMat);
+                    ridge.position.set(
+                        0.045 + Math.cos(angle) * 0.005,
+                        Math.sin(angle) * 0.045,
+                        0
+                    );
+                    ridge.rotation.z = angle;
+                    ridge.rotation.y = Math.PI / 2;
+                    crownGroup.add(ridge);
+                }
+
+                // Crown cap with logo
+                const capGeo = new THREE.CylinderGeometry(0.045, 0.045, 0.015, 32);
+                const capMat = this.materials.polishedGold;
+                const cap = new THREE.Mesh(capGeo, capMat);
+                cap.rotation.z = Math.PI / 2;
+                cap.position.x = 0.05;
+                crownGroup.add(cap);
+
+                // Logo on cap
+                const logoTexture = ProceduralTextureGenerator.createTypographyTexture('C', 32, '#c9a962');
+                const logoGeo = new THREE.PlaneGeometry(0.04, 0.04);
+                const logoMat = new THREE.MeshBasicMaterial({
+                    map: logoTexture,
+                    transparent: true
+                });
+                const logo = new THREE.Mesh(logoGeo, logoMat);
+                logo.position.x = 0.056;
+                logo.rotation.y = Math.PI / 2;
+                crownGroup.add(logo);
+
+                // Crown tube
+                const tubeGeo = new THREE.CylinderGeometry(0.015, 0.015, 0.05, 16);
+                const tubeMat = this.materials.polishedSteel;
+                const tube = new THREE.Mesh(tubeGeo, tubeMat);
+                tube.rotation.z = Math.PI / 2;
+                tube.position.x = -0.03;
+                crownGroup.add(tube);
+
+                crownGroup.position.set(CONFIG.caseDiameter / 2 + 0.05, 0, 0);
+                this.crownGroup.add(crownGroup);
+            }
+
+            buildPushers() {
+                const pusherPositions = [
+                    { y: 0.3, z: 0 },
+                    { y: -0.3, z: 0 }
+                ];
+
+                pusherPositions.forEach(pos => {
+                    const pusherGroup = new THREE.Group();
+
+                    // Pusher body
+                    const pusherGeo = new THREE.CylinderGeometry(0.025, 0.025, 0.06, 32);
+                    const pusherMat = this.materials.polishedGold;
+                    const pusher = new THREE.Mesh(pusherGeo, pusherMat);
+                    pusher.rotation.z = Math.PI / 2;
+                    pusherGroup.add(pusher);
+
+                    // Pusher cap
+                    const capGeo = new THREE.CylinderGeometry(0.03, 0.03, 0.015, 32);
+                    const capMat = this.materials.champagneGold;
+                    const cap = new THREE.Mesh(capGeo, capMat);
+                    cap.rotation.z = Math.PI / 2;
+                    cap.position.x = 0.035;
+                    pusherGroup.add(cap);
+
+                    // Red accent ring
+                    const ringGeo = new THREE.TorusGeometry(0.025, 0.003, 8, 32);
+                    const ringMat = new THREE.MeshStandardMaterial({
+                        color: 0xcc0000,
+                        metalness: 0.8,
+                        roughness: 0.2
+                    });
+                    const ring = new THREE.Mesh(ringGeo, ringMat);
+                    ring.rotation.y = Math.PI / 2;
+                    ring.position.x = 0.02;
+                    pusherGroup.add(ring);
+
+                    pusherGroup.position.set(CONFIG.caseDiameter / 2 + 0.03, pos.y, pos.z);
+                    this.pusherGroup.add(pusherGroup);
+                });
+            }
+
+            buildLugs() {
+                const lugPositions = [
+                    { angle: Math.PI / 6, x: 0 },
+                    { angle: -Math.PI / 6, x: 0 },
+                    { angle: Math.PI + Math.PI / 6, x: 0 },
+                    { angle: Math.PI - Math.PI / 6, x: 0 }
+                ];
+
+                lugPositions.forEach(pos => {
+                    const lugShape = new THREE.Shape();
+                    lugShape.moveTo(0.15, -0.08);
+                    lugShape.lineTo(0.35, -0.06);
+                    lugShape.lineTo(0.38, 0);
+                    lugShape.lineTo(0.35, 0.06);
+                    lugShape.lineTo(0.15, 0.08);
+                    lugShape.lineTo(0.1, 0);
+                    lugShape.closePath();
+
+                    const extrudeSettings = {
+                        depth: 0.15,
+                        bevelEnabled: true,
+                        bevelThickness: 0.005,
+                        bevelSize: 0.005,
+                        bevelSegments: 3
+                    };
+
+                    const lugGeo = new THREE.ExtrudeGeometry(lugShape, extrudeSettings);
+                    const lugMat = this.materials.brushedTitanium;
+                    const lug = new THREE.Mesh(lugGeo, lugMat);
+                    
+                    lug.position.set(
+                        Math.cos(pos.angle) * CONFIG.caseDiameter / 2,
+                        Math.sin(pos.angle) * CONFIG.caseDiameter / 2,
+                        pos.x
+                    );
+                    lug.rotation.z = pos.angle;
+                    lug.castShadow = true;
+                    lug.receiveShadow = true;
+                    this.caseGroup.add(lug);
+                });
+            }
+
+            buildBracelet() {
+                const linkWidth = 0.22;
+                const linkLength = 0.08;
+                const linkThickness = 0.015;
+                const totalLinks = CONFIG.braceletLinks;
+
+                // Create articulated bracelet links
+                for (let i = 0; i < totalLinks; i++) {
+                    const isCenterLink = i % 3 === 1;
+                    const linkGroup = new THREE.Group();
+
+                    // Main link body
+                    const linkShape = new THREE.Shape();
+                    const width = isCenterLink ? linkWidth * 0.9 : linkWidth;
+                    
+                    linkShape.moveTo(-width / 2, -linkLength / 2);
+                    linkShape.lineTo(width / 2, -linkLength / 2);
+                    linkShape.lineTo(width / 2, linkLength / 2);
+                    linkShape.lineTo(-width / 2, linkLength / 2);
+                    linkShape.closePath();
+
+                    const extrudeSettings = {
+                        depth: linkThickness,
+                        bevelEnabled: true,
+                        bevelThickness: 0.002,
+                        bevelSize: 0.002,
+                        bevelSegments: 2
+                    };
+
+                    const linkGeo = new THREE.ExtrudeGeometry(linkShape, extrudeSettings);
+                    const linkMat = isCenterLink ? this.materials.polishedSteel : this.materials.brushedTitanium;
+                    const link = new THREE.Mesh(linkGeo, linkMat);
+                    link.castShadow = true;
+                    link.receiveShadow = true;
+                    linkGroup.add(link);
+
+                    // Brushed center stripe on polished links
+                    if (isCenterLink) {
+                        const stripeGeo = new THREE.BoxGeometry(width * 0.5, linkLength * 0.9, linkThickness + 0.001);
+                        const stripeMat = this.materials.brushedTitanium;
+                        const stripe = new THREE.Mesh(stripeGeo, stripeMat);
+                        stripe.position.z = linkThickness / 2 + 0.0005;
+                        linkGroup.add(stripe);
+                    }
+
+                    // Connector pins
+                    const pinGeo = new THREE.CylinderGeometry(0.008, 0.008, 0.025, 16);
+                    const pinMat = this.materials.polishedSteel;
+                    
+                    const pin1 = new THREE.Mesh(pinGeo, pinMat);
+                    pin1.rotation.x = Math.PI / 2;
+                    pin1.position.set(-width / 2 - 0.01, 0, linkThickness / 2);
+                    linkGroup.add(pin1);
+
+                    const pin2 = new THREE.Mesh(pinGeo, pinMat);
+                    pin2.rotation.x = Math.PI / 2;
+                    pin2.position.set(width / 2 + 0.01, 0, linkThickness / 2);
+                    linkGroup.add(pin2);
+
+                    // Position links in a curve
+                    const curveAngle = (i / totalLinks - 0.5) * Math.PI * 0.6;
+                    const radius = 1.5;
+                    
+                    linkGroup.position.set(
+                        Math.sin(curveAngle) * radius,
+                        -i * (linkLength * 0.85) + totalLinks * linkLength * 0.4,
+                        -CONFIG.caseThickness / 2 - 0.05
+                    );
+                    linkGroup.rotation.z = curveAngle;
+
+                    this.braceletGroup.add(linkGroup);
+                    this.braceletLinks.push(linkGroup);
+                }
+
+                // Clasp at the end
+                this.createClasp(totalLinks, linkWidth, linkLength);
+            }
+
+            createClasp(totalLinks, linkWidth, linkLength) {
+                const claspGroup = new THREE.Group();
+
+                // Clasp body
+                const claspShape = new THREE.Shape();
+                claspShape.moveTo(-linkWidth * 0.7, -linkLength * 0.5);
+                claspShape.lineTo(linkWidth * 0.7, -linkLength * 0.5);
+                claspShape.lineTo(linkWidth * 0.6, linkLength * 0.5);
+                claspShape.lineTo(-linkWidth * 0.6, linkLength * 0.5);
+                claspShape.closePath();
+
+                const claspExtrudeSettings = {
+                    depth: 0.02,
+                    bevelEnabled: true,
+                    bevelThickness: 0.003,
+                    bevelSize: 0.003,
+                    bevelSegments: 2
+                };
+
+                const claspGeo = new THREE.ExtrudeGeometry(claspShape, claspExtrudeSettings);
+                const claspMat = this.materials.brushedTitanium;
+                const clasp = new THREE.Mesh(claspGeo, claspMat);
+                clasp.castShadow = true;
+                claspGroup.add(clasp);
+
+                // Engraving on clasp
+                const engraveTexture = ProceduralTextureGenerator.createTypographyTexture('CHRONOS', 24, '#c9a962');
+                const engraveGeo = new THREE.PlaneGeometry(linkWidth * 0.5, linkLength * 0.3);
+                const engraveMat = new THREE.MeshBasicMaterial({
+                    map: engraveTexture,
+                    transparent: true
+                });
+                const engrave = new THREE.Mesh(engraveGeo, engraveMat);
+                engrave.position.z = 0.021;
+                claspGroup.add(engrave);
+
+                // Deployment mechanism
+                const leverGeo = new THREE.BoxGeometry(linkWidth * 0.3, linkLength * 0.4, 0.015);
+                const leverMat = this.materials.polishedSteel;
+                const lever = new THREE.Mesh(leverGeo, leverMat);
+                lever.position.z = 0.028;
+                claspGroup.add(lever);
+
+                claspGroup.position.set(
+                    0,
+                    -totalLinks * (linkLength * 0.85) - linkLength,
+                    -CONFIG.caseThickness / 2 - 0.05
+                );
+                this.braceletGroup.add(claspGroup);
+            }
+
+            buildRearAssembly() {
+                // Exhibition caseback
+                const rearRadius = CONFIG.caseDiameter / 2 - 0.05;
+
+                // Glass exhibition window
+                const rearGlassGeo = new THREE.CylinderGeometry(rearRadius, rearRadius, 0.03, 128);
+                const rearGlassMat = this.materials.sapphire;
+                const rearGlass = new THREE.Mesh(rearGlassGeo, rearGlassMat);
+                rearGlass.rotation.x = Math.PI / 2;
+                this.rearAssembly.add(rearGlass);
+
+                // Rear bezel ring
+                const rearBezelShape = new THREE.Shape();
+                rearBezelShape.absarc(0, 0, rearRadius + 0.02, 0, Math.PI * 2, false);
+                const rearHolePath = new THREE.Path();
+                rearHolePath.absarc(0, 0, rearRadius - 0.02, 0, Math.PI * 2, true);
+                rearBezelShape.holes.push(rearHolePath);
+
+                const rearBezelExtrudeSettings = {
+                    depth: 0.02,
+                    bevelEnabled: true,
+                    bevelThickness: 0.003,
+                    bevelSize: 0.003,
+                    bevelSegments: 2
+                };
+
+                const rearBezelGeo = new THREE.ExtrudeGeometry(rearBezelShape, rearBezelExtrudeSettings);
+                const rearBezelMat = this.materials.brushedTitanium;
+                const rearBezel = new THREE.Mesh(rearBezelGeo, rearBezelMat);
+                rearBezel.position.z = -0.025;
+                this.rearAssembly.add(rearBezel);
+
+                // Screws around rear bezel
+                for (let i = 0; i < 8; i++) {
+                    const angle = (i / 8) * Math.PI * 2;
+                    const screwDist = rearRadius + 0.01;
+                    
+                    const screwGeo = new THREE.CylinderGeometry(0.015, 0.015, 0.02, 6);
+                    const screwMat = this.materials.polishedSteel;
+                    const screw = new THREE.Mesh(screwGeo, screwMat);
+                    screw.rotation.x = Math.PI / 2;
+                    screw.position.set(
+                        Math.cos(angle) * screwDist,
+                        Math.sin(angle) * screwDist,
+                        -0.015
+                    );
+                    this.rearAssembly.add(screw);
+                }
+
+                // Engraved text on rear
+                const serialTexture = ProceduralTextureGenerator.createTypographyTexture('NO. 0001/1000', 20, '#888888');
+                const serialGeo = new THREE.PlaneGeometry(0.3, 0.08);
+                const serialMat = new THREE.MeshBasicMaterial({
+                    map: serialTexture,
+                    transparent: true
+                });
+                const serial = new THREE.Mesh(serialGeo, serialMat);
+                serial.position.set(0, rearRadius * 0.7, -0.01);
+                serial.rotation.x = Math.PI / 2;
+                this.rearAssembly.add(serial);
+            }
+        }
+
+        // ============================================
+        // LIGHTING SYSTEM
+        // ============================================
+        class LightingSystem {
+            constructor(scene) {
+                this.scene = scene;
+                this.setupLights();
+            }
+
+            setupLights() {
+                // Ambient light (subtle fill)
+                const ambientLight = new THREE.AmbientLight(0xffffff, 0.15);
+                this.scene.add(ambientLight);
+
+                // Main key light
+                const keyLight = new THREE.PointLight(0xffffff, 2.0, 10);
+                keyLight.position.set(3, 3, 3);
+                this.scene.add(keyLight);
+
+                // Fill light
+                const fillLight = new THREE.PointLight(0xffffff, 0.8, 10);
+                fillLight.position.set(-3, 2, 2);
+                this.scene.add(fillLight);
+
+                // Rim light for edges
+                const rimLight = new THREE.PointLight(0xffffff, 1.5, 10);
+                rimLight.position.set(0, -3, 3);
+                this.scene.add(rimLight);
+
+                // Top spotlight
+                const topLight = new THREE.DirectionalLight(0xffffff, 1.2);
+                topLight.position.set(0, 5, 2);
+                this.scene.add(topLight);
+
+                // Bottom fill
+                const bottomLight = new THREE.PointLight(0xffffff, 0.5, 10);
+                bottomLight.position.set(0, -2, -2);
+                this.scene.add(bottomLight);
+
+                // Accent lights for drama
+                const accentLight1 = new THREE.PointLight(0xc9a962, 0.8, 8);
+                accentLight1.position.set(2, 1, -2);
+                this.scene.add(accentLight1);
+
+                const accentLight2 = new THREE.PointLight(0x4466aa, 0.5, 8);
+                accentLight2.position.set(-2, -1, 2);
+                this.scene.add(accentLight2);
+
+                // Hemisphere light for natural sky simulation
+                const hemiLight = new THREE.HemisphereLight(0xffffff, 0x1a1a1a, 0.3);
+                this.scene.add(hemiLight);
+
+                this.lights = [keyLight, fillLight, rimLight, topLight, bottomLight, accentLight1, accentLight2];
+            }
+
+            animate(time) {
+                // Subtle light movement for dynamic reflections
+                this.lights.forEach((light, i) => {
+                    if (light instanceof THREE.PointLight) {
+                        const offset = i * 0.5;
+                        light.position.x += Math.sin(time * 0.5 + offset) * 0.002;
+                        light.position.y += Math.cos(time * 0.3 + offset) * 0.002;
+                    }
+                });
+            }
+        }
+
+        // ============================================
+        // ENVIRONMENT SYSTEM
+        // ============================================
+        class EnvironmentSystem {
+            constructor(scene, renderer) {
+                this.scene = scene;
+                this.renderer = renderer;
+                this.createEnvironment();
+            }
+
+            createEnvironment() {
+                // Create procedural environment map for reflections
+                const cubeSize = 512;
+                const renderTarget = new THREE.WebGLCubeRenderTarget(cubeSize);
+                renderTarget.texture.type = THREE.HalfFloatType;
+
+                // Create environment camera
+                this.envCamera = new THREE.PerspectiveCamera(90, 1, 0.1, 1000);
+                this.envCamera.position.set(0, 0, 0);
+
+                // Create environment scene with gradient
+                const envScene = new THREE.Scene();
+                
+                // Gradient background
+                const canvas = document.createElement('canvas');
+                canvas.width = 512;
+                canvas.height = 512;
+                const ctx = canvas.getContext('2d');
+
+                // Dark studio gradient
+                const gradient = ctx.createLinearGradient(0, 0, 0, 512);
+                gradient.addColorStop(0, '#0a0a0a');
+                gradient.addColorStop(0.5, '#1a1a1a');
+                gradient.addColorStop(1, '#0a0a0a');
+                ctx.fillStyle = gradient;
+                ctx.fillRect(0, 0, 512, 512);
+
+                // Add soft light panels
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+                ctx.fillRect(100, 50, 312, 100);
+                ctx.fillRect(50, 300, 412, 80);
+
+                const texture = new THREE.CanvasTexture(canvas);
+                envScene.background = texture;
+
+                this.envScene = envScene;
+                this.renderTarget = renderTarget;
+                this.scene.environment = renderTarget.texture;
+                this.scene.background = new THREE.Color(0x050505);
+            }
+
+            update(camera) {
+                // Update environment reflections
+                const originalBackground = this.scene.background;
+                this.scene.background = null;
+                
+                // Render environment from object's perspective
+                this.envCamera.position.copy(camera.position);
+                this.envCamera.quaternion.copy(camera.quaternion);
+                
+                this.renderer.setRenderTarget(this.renderTarget);
+                this.renderer.render(this.envScene, this.envCamera);
+                this.renderer.setRenderTarget(null);
+                
+                this.scene.background = originalBackground;
+            }
+        }
+
+        // ============================================
+        // MAIN APPLICATION
+        // ============================================
+        class WatchExperience {
+            constructor() {
+                this.container = document.getElementById('canvas-container');
+                this.scene = null;
+                this.camera = null;
+                this.renderer = null;
+                this.watch = null;
+                this.clock = new THREE.Clock();
+                this.currentSection = 1;
+                this.isExploded = false;
+                this.originalPositions = new Map();
+
+                this.init();
+            }
+
+            async init() {
+                this.showLoadingProgress(10);
+                
+                // Setup Three.js
+                this.setupScene();
+                this.setupCamera();
+                this.setupRenderer();
+                
+                this.showLoadingProgress(30);
+
+                // Create materials
+                this.materials = new MaterialLibrary();
+                
+                this.showLoadingProgress(45);
+
+                // Build watch
+                this.watchBuilder = new WatchBuilder(this.materials);
+                this.watch = this.watchBuilder.buildCompleteWatch();
+                this.scene.add(this.watch);
+                
+                this.showLoadingProgress(65);
+
+                // Setup lighting
+                this.lighting = new LightingSystem(this.scene);
+                
+                this.showLoadingProgress(80);
+
+                // Setup environment
+                this.environment = new EnvironmentSystem(this.scene, this.renderer);
+                
+                this.showLoadingProgress(90);
+
+                // Store original positions for explosion
+                this.storeOriginalPositions();
+
+                // Setup animations
+                this.setupAnimations();
+                
+                this.showLoadingProgress(100);
+
+                // Hide loading screen
+                setTimeout(() => {
+                    this.hideLoadingScreen();
+                    this.startIntroAnimation();
+                }, 500);
+
+                // Start render loop
+                this.animate();
+
+                // Handle resize
+                window.addEventListener('resize', () => this.onResize());
+            }
+
+            showLoadingProgress(percent) {
+                const progress = document.getElementById('progress');
+                progress.style.width = percent + '%';
+            }
+
+            hideLoadingScreen() {
+                const loading = document.getElementById('loading');
+                loading.style.opacity = '0';
+                setTimeout(() => {
+                    loading.style.display = 'none';
+                }, 1000);
+            }
+
+            setupScene() {
+                this.scene = new THREE.Scene();
+                this.scene.fog = new THREE.FogExp2(0x050505, 0.02);
+            }
+
+            setupCamera() {
+                this.camera = new THREE.PerspectiveCamera(
+                    45,
+                    window.innerWidth / window.innerHeight,
+                    0.01,
+                    100
+                );
+                this.camera.position.set(3, 2, 3);
+                this.camera.lookAt(0, 0, 0);
+            }
+
+            setupRenderer() {
+                this.renderer = new THREE.WebGLRenderer({
+                    antialias: true,
+                    powerPreference: 'high-performance'
+                });
+                this.renderer.setSize(window.innerWidth, window.innerHeight);
+                this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+                this.renderer.shadowMap.enabled = true;
+                this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+                this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+                this.renderer.toneMappingExposure = 1.2;
+                this.renderer.physicallyCorrectLights = true;
+                this.renderer.outputEncoding = THREE.sRGBEncoding;
+                this.container.appendChild(this.renderer.domElement);
+            }
+
+            storeOriginalPositions() {
+                // Store original positions for explosion animation
+                this.watch.traverse((child) => {
+                    if (child.isMesh || child.isGroup) {
+                        this.originalPositions.set(child, {
+                            position: child.position.clone(),
+                            rotation: child.rotation.clone(),
+                            scale: child.scale.clone()
+                        });
+                    }
+                });
+            }
+
+            setupAnimations() {
+                gsap.registerPlugin(ScrollTrigger);
+
+                // Section tracking
+                const sections = ['section1', 'section2', 'section3', 'section4', 'section5'];
+                
+                sections.forEach((sectionId, index) => {
+                    const section = document.getElementById(sectionId);
+                    
+                    ScrollTrigger.create({
+                        trigger: section,
+                        start: 'top center',
+                        end: 'bottom center',
+                        onEnter: () => this.onSectionEnter(index + 1),
+                        onLeaveBack: () => this.onSectionEnter(index + 1)
+                    });
+                });
+
+                // Chapter indicators
+                const dots = document.querySelectorAll('.chapter-dot');
+                dots.forEach(dot => {
+                    const chapter = parseInt(dot.dataset.chapter);
+                    
+                    ScrollTrigger.create({
+                        trigger: `#section${chapter}`,
+                        start: 'top center',
+                        end: 'bottom center',
+                        onEnter: () => this.updateChapterIndicator(chapter),
+                        onLeaveBack: () => this.updateChapterIndicator(chapter)
+                    });
+                });
+            }
+
+            onSectionEnter(section) {
+                this.currentSection = section;
+                
+                switch(section) {
+                    case 1:
+                        this.heroShot();
+                        this.updateInfo('Movement', 'Automatic caliber with 72-hour power reserve');
+                        break;
+                    case 2:
+                        this.macroDetail();
+                        this.updateInfo('Craftsmanship', 'Every surface meticulously finished');
+                        break;
+                    case 3:
+                        this.explodedView();
+                        this.updateInfo('Engineering', 'Over 200 individual components');
+                        break;
+                    case 4:
+                        this.mechanicalReveal();
+                        this.updateInfo('Precision', 'Swiss-made mechanical movement');
+                        break;
+                    case 5:
+                        this.reassembly();
+                        this.updateInfo('Perfection', 'Assembled by master watchmakers');
+                        break;
+                }
+            }
+
+            updateChapterIndicator(chapter) {
+                document.querySelectorAll('.chapter-dot').forEach(dot => {
+                    dot.classList.toggle('active', parseInt(dot.dataset.chapter) === chapter);
+                });
+            }
+
+            updateInfo(title, text) {
+                const panel = document.getElementById('infoPanel');
+                const titleEl = document.getElementById('infoTitle');
+                const textEl = document.getElementById('infoText');
+
+                gsap.to(panel, { opacity: 0, y: 20, duration: 0.3, onComplete: () => {
+                    titleEl.textContent = title;
+                    textEl.textContent = text;
+                    gsap.to(panel, { opacity: 1, y: 0, duration: 0.5 });
+                }});
+            }
+
+            heroShot() {
+                // Reset to hero position
+                gsap.to(this.camera.position, {
+                    x: 3,
+                    y: 2,
+                    z: 3,
+                    duration: 2,
+                    ease: 'power2.inOut'
+                });
+                
+                gsap.to(this.watch.rotation, {
+                    y: 0,
+                    duration: 2,
+                    ease: 'power2.inOut'
+                });
+
+                // Reset explosion
+                this.resetExplosion();
+                
+                this.isExploded = false;
+            }
+
+            macroDetail() {
+                // Zoom in for macro details
+                gsap.to(this.camera.position, {
+                    x: 1.5,
+                    y: 0.8,
+                    z: 1.5,
+                    duration: 2,
+                    ease: 'power2.inOut'
+                });
+
+                gsap.to(this.watch.rotation, {
+                    y: Math.PI / 6,
+                    x: 0.2,
+                    duration: 2,
+                    ease: 'power2.inOut'
+                });
+            }
+
+            explodedView() {
+                this.isExploded = true;
+
+                // Explode components
+                gsap.to(this.crystalGroup?.position || this.watch.children[2].position, {
+                    z: 0.5,
+                    duration: 1.5,
+                    ease: 'power2.out'
+                });
+
+                gsap.to(this.bezelGroup?.position || this.watch.children[1].position, {
+                    z: 0.3,
+                    duration: 1.5,
+                    ease: 'power2.out',
+                    delay: 0.2
+                });
+
+                gsap.to(this.dialGroup?.position || this.watch.children[3].position, {
+                    z: 0.2,
+                    duration: 1.5,
+                    ease: 'power2.out',
+                    delay: 0.3
+                });
+
+                gsap.to(this.handsGroup?.position || this.watch.children[4].position, {
+                    z: 0.4,
+                    duration: 1.5,
+                    ease: 'power2.out',
+                    delay: 0.1
+                });
+
+                gsap.to(this.movementGroup?.position || this.watch.children[5].position, {
+                    z: -0.5,
+                    duration: 1.5,
+                    ease: 'power2.out',
+                    delay: 0.4
+                });
+
+                gsap.to(this.caseGroup?.position || this.watch.children[0].position, {
+                    y: 0.3,
+                    duration: 1.5,
+                    ease: 'power2.out'
+                });
+
+                // Camera adjustment
+                gsap.to(this.camera.position, {
+                    x: 4,
+                    y: 1,
+                    z: 4,
+                    duration: 2,
+                    ease: 'power2.inOut'
+                });
+            }
+
+            mechanicalReveal() {
+                // Keep exploded but animate movement
+                if (!this.isExploded) {
+                    this.explodedView();
+                }
+
+                // Activate gear animation
+                this.gearsAnimating = true;
+            }
+
+            reassembly() {
+                // Reverse explosion
+                this.resetExplosion();
+                this.isExploded = false;
+                this.gearsAnimating = false;
+
+                // Return to hero
+                setTimeout(() => {
+                    this.heroShot();
+                }, 1500);
+            }
+
+            resetExplosion() {
+                // Reset all components to original positions
+                this.watch.traverse((child) => {
+                    if (this.originalPositions.has(child)) {
+                        const orig = this.originalPositions.get(child);
+                        gsap.to(child.position, {
+                            x: orig.position.x,
+                            y: orig.position.y,
+                            z: orig.position.z,
+                            duration: 1.5,
+                            ease: 'power2.inOut'
+                        });
+                    }
+                });
+            }
+
+            startIntroAnimation() {
+                // Initial fade in
+                gsap.from(this.watch.scale, {
+                    x: 0,
+                    y: 0,
+                    z: 0,
+                    duration: 2,
+                    ease: 'elastic.out(1, 0.5)'
+                });
+
+                // Hero typography
+                gsap.to('.hero-title', {
+                    opacity: 1,
+                    y: 0,
+                    duration: 1.5,
+                    delay: 0.5,
+                    ease: 'power3.out'
+                });
+
+                gsap.to('.hero-subtitle', {
+                    opacity: 1,
+                    y: 0,
+                    duration: 1.5,
+                    delay: 0.8,
+                    ease: 'power3.out'
+                });
+
+                // Info panel
+                gsap.to('#infoPanel', {
+                    opacity: 1,
+                    y: 0,
+                    duration: 1,
+                    delay: 2,
+                    ease: 'power2.out'
+                });
+            }
+
+            animate() {
+                requestAnimationFrame(() => this.animate());
+
+                const time = this.clock.getElapsedTime();
+                const delta = this.clock.getDelta();
+
+                // Rotate watch slowly
+                if (this.watch && !this.isExploded) {
+                    this.watch.rotation.y = Math.sin(time * 0.2) * 0.3;
+                    this.watch.rotation.x = Math.cos(time * 0.15) * 0.1;
+                }
+
+                // Animate watch hands
+                if (this.watchBuilder) {
+                    // Hour hand (12 hours = full rotation)
+                    if (this.watchBuilder.hourHand) {
+                        this.watchBuilder.hourHand.rotation.z = -(time * 0.0005) % (Math.PI * 2);
+                    }
+
+                    // Minute hand (60 minutes = full rotation)
+                    if (this.watchBuilder.minuteHand) {
+                        this.watchBuilder.minuteHand.rotation.z = -(time * 0.001) % (Math.PI * 2);
+                    }
+
+                    // Second hand (60 seconds = full rotation)
+                    if (this.watchBuilder.secondHand) {
+                        this.watchBuilder.secondHand.rotation.z = -(time * 0.1) % (Math.PI * 2);
+                    }
+
+                    // Subdial hands
+                    this.watchBuilder.subdialHands.forEach(hand => {
+                        if (hand.mesh) {
+                            hand.mesh.rotation.z = -(time * hand.speed + hand.offset) % (Math.PI * 2);
+                        }
+                    });
+
+                    // Movement gears
+                    if (this.gearsAnimating) {
+                        this.watchBuilder.gears.forEach(gear => {
+                            if (gear.userData.speed) {
+                                gear.rotation.z += gear.userData.speed * 0.02;
+                            }
+                        });
+
+                        // Balance wheel oscillation
+                        if (this.watchBuilder.balanceWheel) {
+                            this.watchBuilder.balanceWheel.rotation.z = Math.sin(time * 8) * 0.3;
+                        }
+                    }
+                }
+
+                // Animate lights
+                if (this.lighting) {
+                    this.lighting.animate(time);
+                }
+
+                // Bracelet subtle movement
+                if (this.watchBuilder && this.watchBuilder.braceletLinks.length > 0) {
+                    this.watchBuilder.braceletLinks.forEach((link, i) => {
+                        link.rotation.x = Math.sin(time * 2 + i * 0.2) * 0.02;
+                    });
+                }
+
+                // Render
+                this.renderer.render(this.scene, this.camera);
+            }
+
+            onResize() {
+                this.camera.aspect = window.innerWidth / window.innerHeight;
+                this.camera.updateProjectionMatrix();
+                this.renderer.setSize(window.innerWidth, window.innerHeight);
+            }
+
+            // Get references to watch groups
+            get crystalGroup() {
+                return this.watch?.children[2];
+            }
+
+            get bezelGroup() {
+                return this.watch?.children[1];
+            }
+
+            get dialGroup() {
+                return this.watch?.children[3];
+            }
+
+            get handsGroup() {
+                return this.watch?.children[4];
+            }
+
+            get movementGroup() {
+                return this.watch?.children[5];
+            }
+
+            get caseGroup() {
+                return this.watch?.children[0];
+            }
+        }
+
+        // ============================================
+        // INITIALIZE EXPERIENCE
+        // ============================================
+        window.addEventListener('DOMContentLoaded', () => {
+            new WatchExperience();
+        });
+    </script>
+</body>
+</html>
